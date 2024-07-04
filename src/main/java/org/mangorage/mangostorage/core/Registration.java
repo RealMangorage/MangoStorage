@@ -10,6 +10,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -41,8 +42,8 @@ public class Registration {
                     TRANSMUTATION_BLOCK.get()
             ).build(null)
     );
-    public static final RegistryObject<MenuType<TransmutationMenu>> TRANSMUTATION_MENU = MENU_TYPE.register("transmutation", () -> new MenuType<>(TransmutationMenu::new, FeatureFlags.DEFAULT_FLAGS));
-    public static final RegistryObject<CreativeModeTab> MOD_TAB = TABS.register("trransmutation", () -> CreativeModeTab.builder()
+    public static final RegistryObject<MenuType<TransmutationMenu>> TRANSMUTATION_MENU = MENU_TYPE.register("transmutation", () -> IForgeMenuType.create(TransmutationMenu::new));
+    public static final RegistryObject<CreativeModeTab> MOD_TAB = TABS.register("transmutation", () -> CreativeModeTab.builder()
             .icon(() -> TRANSMUTATION_ITEM.get().getDefaultInstance())
             .displayItems(
                     ((pParameters, pOutput) -> {

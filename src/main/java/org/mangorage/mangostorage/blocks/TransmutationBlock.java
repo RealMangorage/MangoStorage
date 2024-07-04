@@ -13,10 +13,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
+import org.mangorage.mangostorage.blocks.entities.ITransmutationBlockEntity;
 import org.mangorage.mangostorage.blocks.entities.TransmutationBlockEntity;
+import org.mangorage.mangostorage.core.Registration;
 import org.mangorage.mangostorage.menu.TransmutationMenu;
 
 public class TransmutationBlock extends Block implements EntityBlock {
@@ -39,9 +43,7 @@ public class TransmutationBlock extends Block implements EntityBlock {
 
         if (be instanceof TransmutationBlockEntity entity) {
             return new SimpleMenuProvider(
-                    (id, inventory, player) -> {
-                        return new TransmutationMenu(id, inventory, entity.getInventory());
-                    },
+                    (id, inventory, player) -> new TransmutationMenu(id, inventory, entity.getInventory(), entity.getFluidHandler()),
                     Component.literal("Test")
             );
         }
@@ -49,10 +51,24 @@ public class TransmutationBlock extends Block implements EntityBlock {
         return null;
     }
 
+    @Nullable
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
+        return (BlockEntityTicker<T>) createTicker();
+    }
+
+    public <T extends BlockEntity & ITransmutationBlockEntity> BlockEntityTicker<T> createTicker() {
+        return (pLevel, pPos, pState, pBlockEntity) -> {
+            pBlockEntity.tick();
+        };
+    }
+
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult result) {
         if (!level.isClientSide && player instanceof ServerPlayer plr) {
-            plr.openMenu(getMenuProvider(state, level, pos));
+            plr.openMenu(getMenuProvider(state, level, pos), pos);
+            level.getBlockEntity(pos, Registration.TRANSMUTATION_BLOCK_ENTITY.get()).ifPresent(e -> e.setChanged());
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

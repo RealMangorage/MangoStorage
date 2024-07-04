@@ -1,11 +1,9 @@
 package org.mangorage.mangostorage.screen;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
@@ -40,14 +38,10 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         }
     }
 
-
-
     @Override
     protected void slotClicked(Slot pSlot, int pSlotId, int pMouseButton, ClickType pType) {
         super.slotClicked(pSlot, pSlotId, pMouseButton, pType);
     }
-
-
 
     @Override
     public boolean isPauseScreen() {
@@ -57,23 +51,32 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     @Override
     public void render(@NotNull GuiGraphics graphics, int pMouseX, int pMouseY, float pPartialTick) {
         super.render(graphics, pMouseX, pMouseY, pPartialTick);
-        AtomicInteger integer = new AtomicInteger();
+        super.renderTooltip(graphics, pMouseX, pMouseY);
 
+        AtomicInteger integer = new AtomicInteger();
         boxes.forEach(box -> {
+            var id = integer.getAndIncrement();
+            var capacity = menu.getFluidHandler().getTankCapacity(id);
+            var stack = menu.getFluidHandler().getFluidInTank(id);
+
             box.renderWithOutline(
                     graphics,
-                    Fluids.WATER,
+                    stack.isEmpty() ? Fluids.WATER : stack.getFluid(),
                     FluidBox.Style.VERTICAL,
-                    1500,
-                    1000,
+                    stack.getAmount(),
+                    capacity,
                     Color.WHITE.getRGB()
             );
-            box.renderTooltip(graphics, minecraft.font, Component.literal("Box -> " + integer.addAndGet(1)), pMouseX, pMouseY);
+            box.renderTooltip(graphics, minecraft.font, Component.translatable(stack.getTranslationKey()), pMouseX, pMouseY);
+
         });
     }
 
     @Override
     protected void renderBg(GuiGraphics pGuiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
-
+        int i = this.leftPos;
+        int j = this.topPos;
+        var location = ResourceLocation.fromNamespaceAndPath("mangostorage", "textures/gui/container/transmutation.png");
+        pGuiGraphics.blit(location, i, j, 0, 0, this.imageWidth, this.imageHeight);
     }
 }
