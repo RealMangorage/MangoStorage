@@ -1,5 +1,6 @@
 package org.mangorage.mangostorage.core;
 
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
@@ -51,5 +52,6 @@ public class Registration {
             .build()
     );
 
-    public static void init() {}
+    public static void init() {
+    }
 }

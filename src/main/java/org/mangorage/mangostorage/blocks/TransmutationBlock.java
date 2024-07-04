@@ -34,10 +34,19 @@ public class TransmutationBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     protected MenuProvider getMenuProvider(BlockState pState, Level pLevel, BlockPos pPos) {
-        return new SimpleMenuProvider(
-                (id, inventory, player) -> new TransmutationMenu(id, inventory),
-                Component.literal("Test")
-        );
+        var be = pLevel.getBlockEntity(pPos);
+        if (be == null) return null;
+
+        if (be instanceof TransmutationBlockEntity entity) {
+            return new SimpleMenuProvider(
+                    (id, inventory, player) -> {
+                        return new TransmutationMenu(id, inventory, entity.getInventory());
+                    },
+                    Component.literal("Test")
+            );
+        }
+
+        return null;
     }
 
     @Override
