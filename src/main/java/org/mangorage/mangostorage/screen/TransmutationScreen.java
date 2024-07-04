@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransmutationScreen extends AbstractContainerScreen<TransmutationMenu> {
+    private static final ResourceLocation INVENTORY = ResourceLocation.fromNamespaceAndPath("mangostorage", "textures/gui/container/transmutation.png");
     private final List<FluidBox> boxes = new ArrayList<>();
 
     public TransmutationScreen(TransmutationMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
@@ -76,7 +77,6 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     protected void renderBg(GuiGraphics pGuiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
         int i = this.leftPos;
         int j = this.topPos;
-        var location = ResourceLocation.fromNamespaceAndPath("mangostorage", "textures/gui/container/transmutation.png");
-        pGuiGraphics.blit(location, i, j, 0, 0, this.imageWidth, this.imageHeight);
+        pGuiGraphics.blit(INVENTORY, i, j, 0, 0, this.imageWidth, this.imageHeight);
     }
 }

@@ -4,15 +4,27 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+import org.jetbrains.annotations.Nullable;
 import org.mangorage.mangostorage.FluidStorage;
 import org.mangorage.mangostorage.core.Registration;
 import org.mangorage.mangostorage.recipe.TransmuteRecipe;
@@ -61,7 +73,7 @@ public class TransmutationBlockEntity extends BlockEntity implements ITransmutat
     @Override
     public void tick() {
         if (level.isClientSide()) return;
-        var item = inventory.extractItem(0, 1, false);
+        var item = inventory.extractItem(0, 1, true);
         if (item.isEmpty()) return;
 
         TransmuteRecipe recipe = null;
@@ -72,30 +84,37 @@ public class TransmutationBlockEntity extends BlockEntity implements ITransmutat
             }
         }
 
-        if (recipe != null) {
-            var failed = false;
-            var tanks = fluidHandler.getTanks();
-            for (int i = 0; i < tanks; i++) {
-                var result = fluidHandler.getTank(i).fill(recipe.output().copy(), IFluidHandler.FluidAction.SIMULATE);
-                if (result != recipe.output().getAmount()) {
-                    failed = true;
-                    break;
-                }
-            }
-            if (!failed) {
-                for (int i = 0; i < tanks; i++) {
-                    fluidHandler.getTank(i).fill(recipe.output().copy(), IFluidHandler.FluidAction.EXECUTE);
-                }
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            } else {
-                if (!item.isEmpty()) {
-                    item.shrink(1);
-                    inventory.insertItem(0, item, false);
-                }
+        if (recipe == null) return;
 
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            }
+        item = inventory.extractItem(0, 1, false);
+
+        var tanks = fluidHandler.getTanks();
+        var stackTest = recipe.output().copy();
+        int amount = stackTest.getAmount();
+        for (int i = 0; i < tanks; i++) {
+            amount-=fluidHandler.getTank(i).fill(stackTest, IFluidHandler.FluidAction.SIMULATE);
         }
+        if (amount <= 0) {
+            FluidStack stack = recipe.output().copy();
+            int amountLeft = stack.getAmount();
+            for (int i = 0; i < tanks; i++) {
+                amountLeft -= fluidHandler.getTank(i).fill(stack, IFluidHandler.FluidAction.EXECUTE);
+                if (amountLeft <= 0)
+                    break;
+            }
+            if (!item.isEmpty()) {
+                item.shrink(1);
+                inventory.insertItem(0, item, false);
+            }
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            setChanged();
+        } else {
+            if (!item.isEmpty()) {
+                inventory.insertItem(0, item, false);
+            }
+            setChanged();
+        }
+
     }
 
     public IItemHandler getInventory() {
@@ -117,10 +136,21 @@ public class TransmutationBlockEntity extends BlockEntity implements ITransmutat
         super.saveAdditional(pTag, pRegistries);
     }
 
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookup) {
+        handleUpdateTag(pkt.getTag(), lookup);
+    }
+
     @Override
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider holders) {
-        if (tag.contains("fluids", ListTag.TAG_LIST)) {
-            var list = tag.getList("fluids", ListTag.TAG_LIST);
+        if (tag.contains("fluids", 9)) {
+            ListTag list = (ListTag) tag.get("fluids");
             for (int i = 0; i < list.size(); i++) {
                 fluidHandler.getTank(i).readFromNBT(list.getCompound(i));
             }

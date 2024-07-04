@@ -6,9 +6,13 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.DispenserMenu;
+import net.minecraft.world.inventory.FurnaceMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
@@ -94,47 +98,23 @@ public class TransmutationMenu extends AbstractContainerMenu {
     public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(pIndex);
-        if (slot.hasItem()) {
+        if (slot != null && slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
-            EquipmentSlot equipmentslot = pPlayer.getEquipmentSlotForItem(itemstack);
-            if (pIndex == 0) {
-                if (!this.moveItemStackTo(itemstack1, 9, 45, true)) {
+            if (pIndex < 39 && pIndex > 35) {
+                if (!this.moveItemStackTo(itemstack1, 0, 36, true)) {
                     return ItemStack.EMPTY;
                 }
+            }
 
-                slot.onQuickCraft(itemstack1, itemstack);
-            } else if (pIndex >= 1 && pIndex < 5) {
-                if (!this.moveItemStackTo(itemstack1, 9, 45, false)) {
+            if (pIndex >= 0 && pIndex < 36) {
+                if (!this.moveItemStackTo(itemstack1, 36, 37, false)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (pIndex >= 5 && pIndex < 9) {
-                if (!this.moveItemStackTo(itemstack1, 9, 45, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (equipmentslot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR && !this.slots.get(8 - equipmentslot.getIndex()).hasItem()) {
-                int i = 8 - equipmentslot.getIndex();
-                if (!this.moveItemStackTo(itemstack1, i, i + 1, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (equipmentslot == EquipmentSlot.OFFHAND && !this.slots.get(45).hasItem()) {
-                if (!this.moveItemStackTo(itemstack1, 45, 46, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (pIndex >= 9 && pIndex < 36) {
-                if (!this.moveItemStackTo(itemstack1, 36, 45, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (pIndex >= 36 && pIndex < 45) {
-                if (!this.moveItemStackTo(itemstack1, 9, 36, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.moveItemStackTo(itemstack1, 9, 45, false)) {
-                return ItemStack.EMPTY;
             }
 
             if (itemstack1.isEmpty()) {
-                slot.setByPlayer(ItemStack.EMPTY, itemstack);
+                slot.setByPlayer(ItemStack.EMPTY);
             } else {
                 slot.setChanged();
             }
@@ -144,9 +124,6 @@ public class TransmutationMenu extends AbstractContainerMenu {
             }
 
             slot.onTake(pPlayer, itemstack1);
-            if (pIndex == 0) {
-                pPlayer.drop(itemstack1, false);
-            }
         }
 
         return itemstack;
