@@ -28,8 +28,10 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         FluidBox box = new FluidBox(
                 10,
                 55,
-                195,
-                125
+                28,
+                70,
+                () -> this.leftPos,
+                () -> this.topPos
         );
 
         boxes.add(box);
@@ -68,15 +70,13 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
                     capacity,
                     Color.WHITE.getRGB()
             );
-            box.renderTooltip(graphics, minecraft.font, Component.translatable(stack.getTranslationKey()), pMouseX, pMouseY);
 
+            box.renderTooltip(graphics, minecraft.font, Component.translatable(stack.getTranslationKey()), pMouseX, pMouseY);
         });
     }
 
     @Override
     protected void renderBg(GuiGraphics pGuiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
-        int i = this.leftPos;
-        int j = this.topPos;
-        pGuiGraphics.blit(INVENTORY, i, j, 0, 0, this.imageWidth, this.imageHeight);
+        pGuiGraphics.blit(INVENTORY, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
     }
 }

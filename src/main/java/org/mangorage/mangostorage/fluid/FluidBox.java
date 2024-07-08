@@ -7,6 +7,7 @@ import net.minecraft.world.level.material.Fluid;
 import org.mangorage.mangostorage.RenderHelper;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 public class FluidBox {
     public enum Style {
@@ -18,12 +19,24 @@ public class FluidBox {
     private final int height;
     private final int posX;
     private final int posY;
+    private final Supplier<Integer> leftPos;
+    private final Supplier<Integer> topPos;
 
-    public FluidBox(final int width, final int height, final int posX, final int poxY) {
+    public FluidBox(final int width, final int height, final int posX, final int poxY, Supplier<Integer> leftPos, Supplier<Integer> topPos) {
         this.width = width;
         this.height = height;
         this.posX = posX;
         this.posY = poxY;
+        this.leftPos = leftPos;
+        this.topPos = topPos;
+    }
+
+    private int getLeftPos() {
+        return leftPos.get();
+    }
+
+    private int getTopPos() {
+        return topPos.get();
     }
 
     public FluidBox createRight(int offset) {
@@ -31,7 +44,9 @@ public class FluidBox {
                 width,
                 height,
                 offset + (posX + width),
-                posY
+                posY,
+                leftPos,
+                topPos
         );
     }
 
@@ -40,7 +55,9 @@ public class FluidBox {
                 width,
                 height,
                 posX,
-                offset + (posY + height)
+                offset + (posY + height),
+                leftPos,
+                topPos
         );
     }
 
@@ -63,15 +80,15 @@ public class FluidBox {
         RenderHelper.renderFluid(
                 graphics,
                 fluid,
-                posX,
-                posY,
+                (posX + getLeftPos()),
+                (posY + getTopPos()),
                 style == Style.HORIZONTAL ? getPercentage(total, amount, width) : width,
                 style == Style.VERTICAL ? getPercentage(total, amount, height) : height
         );
 
         graphics.renderOutline(
-                posX,
-                posY - height,
+                (posX + getLeftPos()),
+                (posY + getTopPos()) - height,
                 width,
                 height,
                 color
@@ -79,7 +96,7 @@ public class FluidBox {
     }
 
     public void renderTooltip(GuiGraphics graphics, Font font, Component tooltip, int mouseX, int mouseY) {
-        if ( (mouseX > posX && mouseX < posX + width) && (mouseY > posY - height && mouseY < posY ) ) {
+        if ((mouseX > (posX + getLeftPos()) && mouseX < ((posX + getLeftPos()) + width)) && (mouseY > ((posY + getTopPos()) - height) && mouseY < (posY + getTopPos()))) {
             graphics.renderComponentTooltip(
                     font,
                     List.of(tooltip),

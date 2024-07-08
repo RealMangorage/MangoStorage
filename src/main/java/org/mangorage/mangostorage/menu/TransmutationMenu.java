@@ -1,25 +1,18 @@
 package org.mangorage.mangostorage.menu;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.DispenserMenu;
-import net.minecraft.world.inventory.FurnaceMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import org.mangorage.mangostorage.FluidStorage;
 import org.mangorage.mangostorage.blocks.entities.ITransmutationBlockEntity;
-import org.mangorage.mangostorage.blocks.entities.TransmutationBlockEntity;
 import org.mangorage.mangostorage.core.Registration;
 
 public class TransmutationMenu extends AbstractContainerMenu {
