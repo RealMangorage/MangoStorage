@@ -7,6 +7,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
@@ -75,7 +76,7 @@ public class TransmutationMenu extends AbstractContainerMenu {
                         152,
                         18 * 3
                 )
-        );
+        ).set(Items.ACACIA_LOG.getDefaultInstance());
     }
 
     public IFluidHandler getFluidHandler() {
