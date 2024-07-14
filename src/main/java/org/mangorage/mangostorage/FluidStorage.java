@@ -41,18 +41,71 @@ public class FluidStorage implements IFluidHandler {
         return getTank(tank).isFluidValid(stack);
     }
 
+
     @Override
     public int fill(FluidStack resource, FluidAction action) {
-        return 0;
+        int totalFilled = 0;
+
+        for (FluidTank tank : tanks) {
+            int filled = tank.fill(resource, action);
+            resource.shrink(filled);
+            totalFilled += filled;
+
+            if (resource.isEmpty()) {
+                break;
+            }
+        }
+
+        return totalFilled;
     }
 
     @Override
     public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
-        return FluidStack.EMPTY;
+        FluidStack totalDrained = FluidStack.EMPTY;
+
+        for (FluidTank tank : tanks) {
+            FluidStack drained = tank.drain(resource, action);
+
+            if (!drained.isEmpty()) {
+                if (totalDrained.isEmpty()) {
+                    totalDrained = drained.copy();
+                } else {
+                    totalDrained.grow(drained.getAmount());
+                }
+
+                resource.shrink(drained.getAmount());
+
+                if (resource.isEmpty()) {
+                    break;
+                }
+            }
+        }
+
+        return totalDrained;
     }
 
     @Override
     public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
-        return FluidStack.EMPTY;
+        FluidStack totalDrained = FluidStack.EMPTY;
+
+        for (FluidTank tank : tanks) {
+            FluidStack drained = tank.drain(maxDrain, action);
+
+            if (!drained.isEmpty()) {
+                if (totalDrained.isEmpty()) {
+                    totalDrained = drained.copy();
+                } else {
+                    totalDrained.grow(drained.getAmount());
+                }
+
+                maxDrain -= drained.getAmount();
+
+                if (maxDrain <= 0) {
+                    break;
+                }
+            }
+        }
+
+        return totalDrained;
     }
 }

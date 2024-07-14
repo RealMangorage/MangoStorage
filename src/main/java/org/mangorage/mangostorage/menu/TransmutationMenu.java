@@ -3,11 +3,8 @@ package org.mangorage.mangostorage.menu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
@@ -16,14 +13,12 @@ import org.mangorage.mangostorage.FluidStorage;
 import org.mangorage.mangostorage.blocks.entities.ITransmutationBlockEntity;
 import org.mangorage.mangostorage.core.Registration;
 
-public class TransmutationMenu extends AbstractContainerMenu {
-    private final Inventory inventory;
+public class TransmutationMenu extends AbstractBaseMenu {
     private final IFluidHandler fluidHandler;
 
-    public TransmutationMenu(int containenrId, Inventory inventory, FriendlyByteBuf buf) {
-        super(Registration.TRANSMUTATION_MENU.get(), containenrId);
-        this.inventory = inventory;
-        var be = inventory.player.level().getBlockEntity(buf.readBlockPos());
+    public TransmutationMenu(int containerId, Inventory inventory, FriendlyByteBuf buf) {
+        super(Registration.TRANSMUTATION_MENU.get(), containerId, inventory, buf);
+        var be = inventory.player.level().getBlockEntity(getBlockPos());
         if (be != null && be instanceof ITransmutationBlockEntity transmutationBlockEntity) {
             this.fluidHandler = transmutationBlockEntity.getFluidHandler();
             setup(transmutationBlockEntity.getInventory());
@@ -34,23 +29,12 @@ public class TransmutationMenu extends AbstractContainerMenu {
     }
 
     public TransmutationMenu(int pContainerId, Inventory inventory, IItemHandler handler, IFluidHandler fluidHandler) {
-        super(Registration.TRANSMUTATION_MENU.get(), pContainerId);
-        this.inventory = inventory;
+        super(Registration.TRANSMUTATION_MENU.get(), pContainerId, inventory);
         this.fluidHandler = fluidHandler;
         setup(handler);
     }
 
     private void setup(IItemHandler handler) {
-        for (int l = 0; l < 3; l++) {
-            for (int j1 = 0; j1 < 9; j1++) {
-                this.addSlot(new Slot(inventory, j1 + (l + 1) * 9, 8 + j1 * 18, 84 + l * 18));
-            }
-        }
-
-        for (int i1 = 0; i1 < 9; i1++) {
-            this.addSlot(new Slot(inventory, i1, 8 + i1 * 18, 142));
-        }
-
         this.addSlot(
                 new SlotItemHandler(
                         handler,
@@ -65,7 +49,7 @@ public class TransmutationMenu extends AbstractContainerMenu {
                         handler,
                         1,
                         152,
-                        18 * 1
+                        18
                 )
         );
 
@@ -76,16 +60,11 @@ public class TransmutationMenu extends AbstractContainerMenu {
                         152,
                         18 * 3
                 )
-        ).set(Items.ACACIA_LOG.getDefaultInstance());
+        );
     }
 
     public IFluidHandler getFluidHandler() {
         return fluidHandler;
-    }
-
-    @Override
-    public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
-        super.clicked(pSlotId, pButton, pClickType, pPlayer);
     }
 
     @Override

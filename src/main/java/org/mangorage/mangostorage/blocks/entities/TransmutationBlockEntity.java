@@ -9,6 +9,9 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -26,15 +29,20 @@ import org.jetbrains.annotations.Nullable;
 import org.mangorage.mangostorage.FluidStorage;
 import org.mangorage.mangostorage.core.Registration;
 import org.mangorage.mangostorage.handler.WrappedItemHandler;
+import org.mangorage.mangostorage.menu.TransmutationMenu;
 import org.mangorage.mangostorage.recipe.TransmuteConsumeRecipe;
 import org.mangorage.mangostorage.recipe.TransmuteProduceRecipe;
+import org.mangorage.mangostorage.util.ChangedStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TransmutationBlockEntity extends BlockEntity implements ITransmutationBlockEntity {
+public class TransmutationBlockEntity extends BlockEntity implements ITransmutationBlockEntity, IBlockEntityWithMenu<TransmutationMenu> {
 
+    private static final Logger log = LoggerFactory.getLogger(TransmutationBlockEntity.class);
     private final IItemHandler inventory = new ItemStackHandler(3);
     private final FluidStorage fluidHandler = new FluidStorage(1000, 10);
 
@@ -81,80 +89,63 @@ public class TransmutationBlockEntity extends BlockEntity implements ITransmutat
 
     @Override
     public void onLoad() {
-        fluidHandler.getTank(0).fill(
-                new FluidStack(Fluids.WATER, 200),
-                IFluidHandler.FluidAction.EXECUTE
-        );
-        setChanged();
+        fluidHandler.fill(new FluidStack(Fluids.WATER, 500), IFluidHandler.FluidAction.EXECUTE);
+        fluidHandler.fill(new FluidStack(Fluids.LAVA, 500), IFluidHandler.FluidAction.EXECUTE);
     }
 
     @Override
     public void tick() {
-        if (level.isClientSide()) return;
-        AtomicBoolean changed = new AtomicBoolean();
-
-        // CONSUME
-        var iStack = inventory.getStackInSlot(0);
-        if (!iStack.isEmpty()) {
-            TransmuteConsumeRecipe recipe = null;
-            for (TransmuteConsumeRecipe transmuteConsumeRecipe : CONSUME_RECIPES) {
-                if (transmuteConsumeRecipe.isValid(iStack)) {
-                    recipe = transmuteConsumeRecipe;
-                    break;
-                }
-            }
-
-            if (recipe == null) return;
-            var item = inventory.extractItem(0, 1, false);
-            var tanks = fluidHandler.getTanks();
-            var stackTest = recipe.output().copy();
-            int amount = stackTest.getAmount();
-            for (int i = 0; i < tanks; i++) {
-                amount -= fluidHandler.getTank(i).fill(stackTest, IFluidHandler.FluidAction.SIMULATE);
-            }
-            if (amount <= 0) {
-                FluidStack stack = recipe.output().copy();
-                int amountLeft = stack.getAmount();
-                for (int i = 0; i < tanks; i++) {
-                    amountLeft -= fluidHandler.getTank(i).fill(stack, IFluidHandler.FluidAction.EXECUTE);
-                    if (amountLeft <= 0)
-                        break;
-                }
-                if (!item.isEmpty()) {
-                    item.shrink(1);
-                    inventory.insertItem(0, item, false);
-                }
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                changed.set(true);
-            } else {
-                if (!item.isEmpty()) {
-                    inventory.insertItem(0, item, false);
-                }
-                changed.set(true);
-            }
-        }
-
-
-        // PRODUCE
-        var bStack = inventory.getStackInSlot(1);
-        if (!bStack.isEmpty()) {
-            TransmuteProduceRecipe recipe = null;
-            for (TransmuteProduceRecipe produceRecipe : PRODUCE_RECIPES) {
-                if (produceRecipe.output().is(bStack.getItem())) {
-                    recipe = produceRecipe;
-                    break;
-                }
-            }
-
-            if (recipe == null) return;
-
-
+        if (!getLevel().isClientSide()) {
+            var changed = ChangedStatus.of(() -> level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3));
+            changed.setChanged(consumeInput());
+            changed.setChanged(produceOutput());
+            changed.finalizeChanged();
+        } else {
 
         }
+    }
 
-        // Just call it once!
-        if (changed.get())
-            setChanged();
+    private TransmuteProduceRecipe getProduceRecipe() {
+        for (TransmuteProduceRecipe produceRecipe : PRODUCE_RECIPES) {
+            if (produceRecipe.drainFromStorage(getFluidHandler(), IFluidHandler.FluidAction.SIMULATE)) {
+                return produceRecipe;
+            }
+        }
+        return null;
+    }
+
+    private TransmuteConsumeRecipe getConsumeRecipe(ItemStack itemStack) {
+        for (TransmuteConsumeRecipe consumeRecipe : CONSUME_RECIPES) {
+            if (consumeRecipe.isValid(itemStack) && fluidHandler.fill(consumeRecipe.output().copy(), IFluidHandler.FluidAction.SIMULATE) == consumeRecipe.output().getAmount()) {
+                return consumeRecipe;
+            }
+        }
+        return null;
+    }
+
+    private boolean consumeInput() {
+        var item = inventory.getStackInSlot(0);
+        if (item.isEmpty()) return false;
+        var recipe = getConsumeRecipe(item);
+        if (recipe != null) {
+            inventory.extractItem(0, 1, false);
+            getFluidHandler().fill(recipe.output().copy(), IFluidHandler.FluidAction.EXECUTE);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean produceOutput() {
+        var recipe = getProduceRecipe();
+        if (recipe != null) {
+            var output = recipe.output().copy();
+            if (inventory.insertItem(2, output, true).isEmpty()) {
+                recipe.drainFromStorage(getFluidHandler(), IFluidHandler.FluidAction.EXECUTE);
+                inventory.insertItem(2, output, false);
+                return true;
+            }
+        }
+        return false;
     }
 
     public IItemHandler getInventory() {
@@ -213,5 +204,10 @@ public class TransmutationBlockEntity extends BlockEntity implements ITransmutat
         if (cap == ForgeCapabilities.ITEM_HANDLER)
             return PUBLIC_LAZY_ITEM.cast();
         return LazyOptional.empty();
+    }
+
+    @Override
+    public TransmutationMenu create(int containerid, Inventory inventory, Player player) {
+        return new TransmutationMenu(containerid, inventory, getInventory(), getFluidHandler());
     }
 }

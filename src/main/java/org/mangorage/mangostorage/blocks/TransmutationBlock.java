@@ -1,16 +1,10 @@
 package org.mangorage.mangostorage.blocks;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -21,9 +15,8 @@ import org.jetbrains.annotations.Nullable;
 import org.mangorage.mangostorage.blocks.entities.ITransmutationBlockEntity;
 import org.mangorage.mangostorage.blocks.entities.TransmutationBlockEntity;
 import org.mangorage.mangostorage.core.Registration;
-import org.mangorage.mangostorage.menu.TransmutationMenu;
 
-public class TransmutationBlock extends Block implements EntityBlock {
+public class TransmutationBlock extends AbstractMenuBlock implements EntityBlock {
     public TransmutationBlock(Properties properties) {
         super(properties);
     }
@@ -34,22 +27,6 @@ public class TransmutationBlock extends Block implements EntityBlock {
         return new TransmutationBlockEntity(pPos, pState);
     }
 
-
-    @Nullable
-    @Override
-    protected MenuProvider getMenuProvider(BlockState pState, Level pLevel, BlockPos pPos) {
-        var be = pLevel.getBlockEntity(pPos);
-        if (be == null) return null;
-
-        if (be instanceof TransmutationBlockEntity entity) {
-            return new SimpleMenuProvider(
-                    (id, inventory, player) -> new TransmutationMenu(id, inventory, entity.getInventory(), entity.getFluidHandler()),
-                    Component.literal("Test")
-            );
-        }
-
-        return null;
-    }
 
     @Nullable
     @SuppressWarnings("unchecked")
@@ -63,14 +40,4 @@ public class TransmutationBlock extends Block implements EntityBlock {
             pBlockEntity.tick();
         };
     }
-
-    @Override
-    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult result) {
-        if (!level.isClientSide && player instanceof ServerPlayer plr) {
-            plr.openMenu(getMenuProvider(state, level, pos), pos);
-            level.getBlockEntity(pos, Registration.TRANSMUTATION_BLOCK_ENTITY.get()).ifPresent(e -> e.setChanged());
-        }
-        return InteractionResult.sidedSuccess(level.isClientSide);
-    }
-
 }
